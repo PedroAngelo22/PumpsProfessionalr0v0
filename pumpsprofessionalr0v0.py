@@ -203,7 +203,7 @@ authenticator = stauth.Authenticate(
     config['cookie']['expiry_days']
 )
 
-name, authentication_status, username = authenticator.login('Login', 'main')
+name, authentication_status, username = authenticator.login()
 
 # --- LÓGICA PRINCIPAL DA APLICAÇÃO ---
 if st.session_state["authentication_status"]:

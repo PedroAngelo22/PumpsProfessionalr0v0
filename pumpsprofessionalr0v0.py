@@ -200,11 +200,16 @@ authenticator = stauth.Authenticate(
     config['cookie']['expiry_days']
 )
 
-# --- LINHA CORRIGIDA ---
-name, authentication_status, username = authenticator.login()
+# --- CHAMADA DE LOGIN CORRIGIDA ---
+authenticator.login()
 
 # --- LÓGICA PRINCIPAL DA APLICAÇÃO ---
 if st.session_state["authentication_status"]:
+    # --- BUSCA DE DADOS DO USUÁRIO DO SESSION_STATE ---
+    name = st.session_state['name']
+    username = st.session_state['username']
+    
+    # Inicializa o estado da sessão se for o primeiro login
     if 'trechos_antes' not in st.session_state: st.session_state.trechos_antes = []
     if 'trechos_depois' not in st.session_state: st.session_state.trechos_depois = []
     if 'ramais_paralelos' not in st.session_state: st.session_state.ramais_paralelos = {}

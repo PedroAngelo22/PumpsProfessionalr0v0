@@ -32,7 +32,6 @@ K_FACTORS = {
 FLUIDOS = { "Água a 20°C": {"rho": 998.2, "nu": 1.004e-6}, "Etanol a 20°C": {"rho": 789.0, "nu": 1.51e-6} }
 
 # --- FUNÇÕES DE CÁLCULO (O MOTOR DA APLICAÇÃO) ---
-# (Aqui entram todas as suas funções de cálculo, sem modificação)
 def calcular_perda_serie(lista_trechos, vazao_m3h, fluido_selecionado):
     perda_total = 0
     for trecho in lista_trechos:
@@ -157,7 +156,6 @@ def gerar_grafico_sensibilidade_diametro(sistema_base, fator_escala_range, **par
         custos.append(resultado_energia['custo_anual'])
     return pd.DataFrame({'Fator de Escala nos Diâmetros (%)': fatores, 'Custo Anual de Energia (R$)': custos})
 
-# --- FUNÇÕES DE INTERFACE (UI) ---
 def render_trecho_ui(trecho, prefixo, lista_trechos):
     st.markdown(f"**Trecho**"); c1, c2, c3 = st.columns(3)
     trecho['comprimento'] = c1.number_input("L (m)", min_value=0.1, value=trecho['comprimento'], key=f"comp_{prefixo}_{trecho['id']}")
@@ -172,7 +170,6 @@ def render_trecho_ui(trecho, prefixo, lista_trechos):
     c1, c2 = st.columns([3, 1]); c1.selectbox("Selecionar Acessório", options=list(K_FACTORS.keys()), key=f"selectbox_acessorio_{trecho['id']}"); c2.number_input("Qtd", min_value=1, value=1, step=1, key=f"quantidade_acessorio_{trecho['id']}")
     st.button("Adicionar Acessório", on_click=adicionar_acessorio, args=(trecho['id'], lista_trechos), key=f"btn_add_acessorio_{trecho['id']}", use_container_width=True)
 
-# --- FUNÇÕES DE CALLBACK (AÇÕES DE BOTÕES) ---
 def adicionar_item(tipo_lista):
     novo_id = time.time()
     st.session_state[tipo_lista].append({"id": novo_id, "comprimento": 10.0, "diametro": 100.0, "material": "Aço Carbono (novo)", "acessorios": []})
@@ -203,11 +200,11 @@ authenticator = stauth.Authenticate(
     config['cookie']['expiry_days']
 )
 
+# --- LINHA CORRIGIDA ---
 name, authentication_status, username = authenticator.login()
 
 # --- LÓGICA PRINCIPAL DA APLICAÇÃO ---
 if st.session_state["authentication_status"]:
-    # Inicializa o estado da sessão se for o primeiro login
     if 'trechos_antes' not in st.session_state: st.session_state.trechos_antes = []
     if 'trechos_depois' not in st.session_state: st.session_state.trechos_depois = []
     if 'ramais_paralelos' not in st.session_state: st.session_state.ramais_paralelos = {}
@@ -218,9 +215,7 @@ if st.session_state["authentication_status"]:
     if 'fluido_selecionado' not in st.session_state: st.session_state.fluido_selecionado = "Água a 20°C"
     if 'h_geometrica' not in st.session_state: st.session_state.h_geometrica = 15.0
 
-    # --- SIDEBAR ---
     with st.sidebar:
-        # --- Seção de Boas-vindas e Projetos ---
         st.header(f"Bem-vindo(a), {name}!")
         st.divider()
         st.header("🚀 Gestão de Projetos")
@@ -266,10 +261,9 @@ if st.session_state["authentication_status"]:
                 st.warning("Por favor, insira um nome para o projeto.")
         
         st.divider()
-        authenticator.logout('Logout', 'main', key='unique_key')
+        authenticator.logout('Logout', 'sidebar')
         st.divider()
 
-        # --- Seção de Parâmetros da Simulação ---
         st.header("⚙️ Parâmetros da Simulação")
         st.session_state.fluido_selecionado = st.selectbox("Selecione o Fluido", list(FLUIDOS.keys()), index=list(FLUIDOS.keys()).index(st.session_state.fluido_selecionado))
         st.session_state.h_geometrica = st.number_input("Altura Geométrica (m)", 0.0, value=st.session_state.h_geometrica)
@@ -296,7 +290,6 @@ if st.session_state["authentication_status"]:
             c1, c2 = st.columns(2); c1.button("Adicionar Trecho (Depois)", on_click=adicionar_item, args=("trechos_depois",), use_container_width=True); c2.button("Remover Trecho (Depois)", on_click=remover_ultimo_item, args=("trechos_depois",), use_container_width=True)
         st.divider(); st.header("🔌 Equipamentos e Custo"); rend_motor = st.slider("Eficiência do Motor (%)", 1, 100, 90); horas_por_dia = st.number_input("Horas por Dia", 1.0, 24.0, 8.0, 0.5); tarifa_energia = st.number_input("Custo da Energia (R$/kWh)", 0.10, 5.00, 0.75, 0.01, format="%.2f")
 
-    # --- CORPO PRINCIPAL DA APLICAÇÃO ---
     st.title("💧 Análise de Redes de Bombeamento com Curva de Bomba")
     
     try:
@@ -324,60 +317,47 @@ if st.session_state["authentication_status"]:
         vazao_op, altura_op, func_curva_sistema = encontrar_ponto_operacao(sistema_atual, st.session_state.h_geometrica, st.session_state.fluido_selecionado, func_curva_bomba)
         
         if vazao_op is not None and altura_op is not None:
-            # Continua com a exibição de resultados e gráficos...
-            # (O restante do seu bloco try...except vai aqui)
             eficiencia_op = func_curva_eficiencia(vazao_op)
             if eficiencia_op > 100: eficiencia_op = 100
             if eficiencia_op < 0: eficiencia_op = 0
-
             resultados_energia = calcular_analise_energetica(vazao_op, altura_op, eficiencia_op, rend_motor, horas_por_dia, tarifa_energia, st.session_state.fluido_selecionado)
-
             st.header("📊 Resultados no Ponto de Operação")
             c1,c2,c3,c4 = st.columns(4); c1.metric("Vazão de Operação", f"{vazao_op:.2f} m³/h"); c2.metric("Altura de Operação", f"{altura_op:.2f} m"); c3.metric("Eficiência da Bomba", f"{eficiencia_op:.1f} %"); c4.metric("Custo Anual", f"R$ {resultados_energia['custo_anual']:.2f}")
             st.divider()
-
             st.header("🗺️ Diagrama da Rede")
             _, distribuicao_vazao_op = calcular_perdas_paralelo(sistema_atual['paralelo'], vazao_op, st.session_state.fluido_selecionado)
             diagrama = gerar_diagrama_rede(sistema_atual, vazao_op, distribuicao_vazao_op if len(sistema_atual['paralelo']) >= 2 else {}, st.session_state.fluido_selecionado)
             st.graphviz_chart(diagrama)
             st.divider()
-
             st.header("📈 Gráfico de Curvas: Bomba vs. Sistema")
             max_vazao_curva = st.session_state.curva_altura_df['Vazão (m³/h)'].max()
             max_plot_vazao = max(vazao_op * 1.2, max_vazao_curva * 1.2) 
             vazao_range = np.linspace(0, max_plot_vazao, 100)
             altura_bomba = func_curva_bomba(vazao_range)
             altura_sistema = [func_curva_sistema(q) if func_curva_sistema(q) < 1e10 else np.nan for q in vazao_range]
-
             fig, ax = plt.subplots(figsize=(10, 6))
             ax.plot(vazao_range, altura_bomba, label='Curva da Bomba', color='royalblue', lw=2)
             ax.plot(vazao_range, altura_sistema, label='Curva do Sistema', color='seagreen', lw=2)
             ax.scatter(vazao_op, altura_op, color='red', s=100, zorder=5, label=f'Ponto de Operação ({vazao_op:.1f} m³/h, {altura_op:.1f} m)')
-            
             ax.set_xlabel("Vazão (m³/h)"); ax.set_ylabel("Altura Manométrica (m)"); ax.set_title("Curva da Bomba vs. Curva do Sistema"); ax.legend(); ax.grid(True)
             ax.set_xlim(left=0, right=max_plot_vazao)
-            
             max_altura_relevante = max(altura_op, np.nanmax(altura_sistema) if any(~np.isnan(altura_sistema)) else altura_op)
             y_max_ajustado = max_altura_relevante * 1.15
             y_min_ajustado = st.session_state.h_geometrica * 0.9
             ax.set_ylim(bottom=y_min_ajustado, top=y_max_ajustado)
             st.pyplot(fig)
             st.divider()
-
             st.header("📈 Análise de Sensibilidade de Custo por Diâmetro")
             escala_range = st.slider("Fator de Escala para Diâmetros (%)", 50, 200, (80, 120), key="sensibilidade_slider")
             params_equipamentos_sens = {'eficiencia_bomba_percent': eficiencia_op, 'eficiencia_motor_percent': rend_motor, 'horas_dia': horas_por_dia, 'custo_kwh': tarifa_energia, 'fluido_selecionado': st.session_state.fluido_selecionado}
             params_fixos_sens = {'vazao_op': vazao_op, 'h_geo': st.session_state.h_geometrica, 'fluido': st.session_state.fluido_selecionado, 'equipamentos': params_equipamentos_sens}
             chart_data_sensibilidade = gerar_grafico_sensibilidade_diametro(sistema_atual, escala_range, **params_fixos_sens)
             st.line_chart(chart_data_sensibilidade.set_index('Fator de Escala nos Diâmetros (%)'))
-
         else:
             st.error("Não foi possível encontrar um ponto de operação. Verifique os parâmetros.")
-            # Código para mostrar o gráfico mesmo em caso de falha...
 
     except Exception as e:
         st.error(f"Ocorreu um erro inesperado durante a execução. Detalhe: {str(e)}")
-
 
 elif st.session_state["authentication_status"] is False:
     st.error('Usuário/senha incorreto')

@@ -1,9 +1,9 @@
-streamlit
-pandas
-fpdf2
+bcrypt
+graphviz
 matplotlib
 numpy
+pandas
+pyyaml
 scipy
-graphviz
-reportlab
+streamlit
 streamlit-authenticator
